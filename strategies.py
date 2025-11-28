@@ -61,9 +61,11 @@ def boll_breakout_signals(
 ) -> pd.DataFrame:
     df = data.copy()
     boll = compute_bollinger(df["close"], window, k)
-    df = df.join(boll)
-    buy_cross = (df["close"].shift(1) <= df["boll_upper"].shift(1)) & (df["close"] > df["boll_upper"])
-    sell_cross = (df["close"].shift(1) >= df["boll_lower"].shift(1)) & (df["close"] < df["boll_lower"])
+    # 避免与外层已存在的 BOLL 列重名冲突：不合并，直接使用临时上轨/下轨序列
+    upper = boll["boll_upper"]
+    lower = boll["boll_lower"]
+    buy_cross = (df["close"].shift(1) <= upper.shift(1)) & (df["close"] > upper)
+    sell_cross = (df["close"].shift(1) >= lower.shift(1)) & (df["close"] < lower)
     actions = pd.Series(index=df.index, dtype="object")
     actions.loc[buy_cross] = "buy"
     actions.loc[sell_cross] = "sell"
